@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math/big"
 	"strconv"
 	"strings"
@@ -65,6 +66,7 @@ func generateTIN(testTIN bool) []int {
 	isTwice := isTwice()
 	// Get the indices for the lucky digit
 	luckyIndices := getLuckyIndices(isTwice)
+	fmt.Println(luckyIndices)
 	// Determine digit which should exist twice or thrice
 	luckyDigit := determineLuckyDigit(luckyIndices, testTIN)
 	// Remove the lucky digit from the set of possible digits (value set to -1)
@@ -123,6 +125,7 @@ func removeDigitFromPossibleDigits(digit int, possibleDigits []int) {
 
 // Calculates two or three indices for the digit which exists twice or thrice in the TIN.
 // If one digit exists twice, the third index gets the value -1.
+// If a digit occures thrice, this function assures that the third index is not besides the other indices.
 func getLuckyIndices(isTwice bool) []int {
 	const len = 10
 	// Field for the indices, either two, or three
@@ -139,8 +142,17 @@ func getLuckyIndices(isTwice bool) []int {
 
 	if !isTwice {
 		index3, _ := rand.Int(rand.Reader, big.NewInt(len))
-		for index1.Cmp(index3) == 0 || index2.Cmp(index3) == 0 {
+
+		i1 := index1.Uint64()
+		i2 := index2.Uint64()
+		i3 := index3.Uint64()
+
+		indicesAreNeighbours := checkIndicesForBeingNeighbours(i1, i2, i3)
+
+		for index1.Cmp(index3) == 0 || index2.Cmp(index3) == 0 || indicesAreNeighbours {
 			index3, _ = rand.Int(rand.Reader, big.NewInt(len))
+			i3 = index3.Uint64()
+			indicesAreNeighbours = checkIndicesForBeingNeighbours(i1, i2, i3)
 		}
 		indices[2] = int(index3.Uint64())
 	} else {
@@ -148,6 +160,17 @@ func getLuckyIndices(isTwice bool) []int {
 	}
 
 	return indices
+}
+
+// Helper function to check if the given indices are positioned besides each other.
+func checkIndicesForBeingNeighbours(i1 uint64, i2 uint64, i3 uint64) bool {
+	a := i1 < i2 && i2 < i3 && (i3-i2 == 1 && i2-i1 == 1)
+	b := i1 < i3 && i3 < i2 && (i2-i3 == 1 && i3-i1 == 1)
+	c := i2 < i1 && i1 < i3 && (i3-i1 == 1 && i1-i2 == 1)
+	d := i3 < i1 && i1 < i2 && (i2-i1 == 1 && i1-i3 == 1)
+	e := i3 < i2 && i2 < i1 && (i1-i2 == 1 && i2-i3 == 1)
+	f := i2 < i3 && i3 < i1 && (i1-i3 == 1 && i3-i2 == 1)
+	return a || b || c || d || e || f
 }
 
 // Determines a digit between 0 and 9 which will exist twice or thrice in the TIN.
