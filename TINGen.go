@@ -47,7 +47,6 @@ func createGUI() {
 			tinStrSlice[i] = strconv.Itoa(val)
 		}
 		l.SetText(strings.Join(tinStrSlice, ""))
-		w.Canvas().Refresh(w.Content())
 	})
 	w.SetContent(widget.NewVBox(l, c, b))
 	w.ShowAndRun()
